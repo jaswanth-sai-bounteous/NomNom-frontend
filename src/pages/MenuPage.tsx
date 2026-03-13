@@ -90,7 +90,8 @@ const MenuPage = () => {
           <ChefHat className="size-4" />
           <AlertTitle>We could not load the menu</AlertTitle>
           <AlertDescription>
-            Please make sure the backend is running on `http://localhost:5000`.
+            Please make sure the backend API is available and the frontend is using the correct
+            `VITE_API_URL`.
           </AlertDescription>
         </Alert>
       ) : isLoading ? (
