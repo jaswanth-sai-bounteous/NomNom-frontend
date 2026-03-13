@@ -13,17 +13,20 @@ import {
   isAuthenticated,
   saveAuth,
 } from "@/lib/auth";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { queryClient } from "@/lib/queryClient";
 import { clearUserStores, syncUserStores } from "@/lib/storeSync";
 
-const About = lazy(() => import("@/components/About"));
-const CartPage = lazy(() => import("@/pages/CartPage"));
-const Home = lazy(() => import("@/pages/Home"));
-const Login = lazy(() => import("@/pages/Login"));
-const MenuPage = lazy(() => import("@/pages/MenuPage"));
-const OrdersPage = lazy(() => import("@/pages/OrdersPage"));
-const ProductDetailPage = lazy(() => import("@/pages/ProductDetailPage"));
-const Signup = lazy(() => import("@/pages/Signup"));
+const About = lazy(lazyWithRetry(() => import("@/components/About"), "about"));
+const CartPage = lazy(lazyWithRetry(() => import("@/pages/CartPage"), "cart"));
+const Home = lazy(lazyWithRetry(() => import("@/pages/Home"), "home"));
+const Login = lazy(lazyWithRetry(() => import("@/pages/Login"), "login"));
+const MenuPage = lazy(lazyWithRetry(() => import("@/pages/MenuPage"), "menu"));
+const OrdersPage = lazy(lazyWithRetry(() => import("@/pages/OrdersPage"), "orders"));
+const ProductDetailPage = lazy(
+  lazyWithRetry(() => import("@/pages/ProductDetailPage"), "product-detail"),
+);
+const Signup = lazy(lazyWithRetry(() => import("@/pages/Signup"), "signup"));
 
 const ProtectedRoute = () => {
   const token = getStoredToken();
