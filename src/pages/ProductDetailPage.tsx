@@ -164,7 +164,7 @@ const ProductDetailPage = () => {
           description="A few more menu picks chosen in a predictable way so the page stays stable and easy to understand."
         />
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {suggestions.map((suggestedProduct) => (
             <ProductCard
               key={suggestedProduct.id}

@@ -86,7 +86,7 @@ const Home = () => {
         ) : null}
 
         {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
               <Card
                 key={index}
@@ -95,7 +95,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {featuredProducts.map((product) => (
               <ProductCard
                 key={product.id}
