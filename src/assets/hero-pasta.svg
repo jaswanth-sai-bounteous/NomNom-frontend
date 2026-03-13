@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Creamy Alfredo Pasta</title>
+  <desc id="desc">Illustrated pasta hero image for NomNom.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)" />
+  <circle cx="1020" cy="120" r="170" fill="#f8fafc" opacity="0.12" />
+  <circle cx="120" cy="650" r="200" fill="#f59e0b" opacity="0.1" />
+  <g transform="translate(220 150)">
+    <ellipse cx="380" cy="420" rx="300" ry="72" fill="#000000" opacity="0.2" />
+    <ellipse cx="380" cy="320" rx="270" ry="120" fill="#e5e7eb" />
+    <ellipse cx="380" cy="300" rx="230" ry="95" fill="#f8fafc" />
+    <path d="M220 280c35-45 95-65 140-30 35 28 70 22 110-6 44-32 90-18 126 24 22 26 40 59 34 92-7 42-44 64-91 64-56 0-72-20-110-20-41 0-58 20-118 20-65 0-108-30-108-88 0-23 7-40 17-56Z" fill="#fef3c7" />
+    <path d="M260 245c-35 34-42 86 11 136" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" />
+    <path d="M320 226c-34 42-30 104 18 150" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" />
+    <path d="M390 218c-30 48-22 108 24 154" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" />
+    <path d="M460 228c-22 44-16 99 28 145" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" />
+    <path d="M530 246c-18 38-10 86 24 128" fill="none" stroke="#facc15" stroke-width="14" stroke-linecap="round" />
+    <circle cx="300" cy="315" r="12" fill="#22c55e" />
+    <circle cx="360" cy="350" r="12" fill="#22c55e" />
+    <circle cx="420" cy="295" r="12" fill="#22c55e" />
+    <circle cx="490" cy="338" r="12" fill="#22c55e" />
+    <text x="380" y="560" fill="#f5f3ff" font-family="Verdana, Arial, sans-serif" font-size="48" text-anchor="middle">Creamy Alfredo Pasta</text>
+  </g>
+</svg>

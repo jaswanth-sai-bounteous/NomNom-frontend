@@ -1,126 +1,122 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import logo from "../assets/NomNom.png";
 
-type LoginResponse = {
-  token: string;
-  user: { id: string; name: string; email: string };
-};
+import logo from "@/assets/NomNom.png";
+import { loginUser } from "@/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { saveAuth } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
+import { syncUserStores } from "@/lib/storeSync";
+import { loginFormSchema } from "@/types/auth";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const validate = () => {
-    if (!email || !password) {
-      toast.error("Please fill all fields");
-      return false;
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const parsedForm = loginFormSchema.safeParse({ email, password });
+
+    if (!parsedForm.success) {
+      toast.error(parsedForm.error.issues[0]?.message ?? "Please check your form");
+      return;
     }
-
-    const emailRegex = /^\S+@\S+\.\S+$/;
-
-    if (!emailRegex.test(email)) {
-      toast.error("Invalid email format");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!validate()) return;
-
-    setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/users/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      setLoading(true);
+      await queryClient.cancelQueries();
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const firstKey = query.queryKey[0];
+          return firstKey === "cart" || firstKey === "orders" || firstKey === "current-user";
         },
-        body: JSON.stringify({ email, password }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Invalid credentials");
-        return;
-      }
-
-      const loginData = data as LoginResponse;
-
-      localStorage.setItem("token", loginData.token);
-
-      toast.success("Login successful 🎉");
-
-      setTimeout(() => {
-        navigate("/home");
-      }, 1000);
-
-    } catch {
-      toast.error("Server error");
+      const data = await loginUser(parsedForm.data);
+      saveAuth(data.token, data.user);
+      syncUserStores(data.user);
+      toast.success("Login successful");
+      navigate("/home");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF8E1]">
+    <div className="min-h-screen bg-[linear-gradient(135deg,_#fff6e8_0%,_#fffaf5_45%,_#fef3c7_100%)] px-4 py-10">
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="hidden space-y-6 lg:block">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">
+            Welcome Back
+          </p>
+          <h1 className="max-w-xl text-5xl font-semibold leading-tight text-stone-900">
+            Sign in to explore the menu, save your cart, and place orders with ease.
+          </h1>
+          <p className="max-w-lg text-base leading-8 text-stone-600">
+            NomNom is designed to feel simple and polished. Once you log in, you can
+            browse dishes, add them to your cart, and keep track of completed orders.
+          </p>
+        </section>
 
-      <div className="w-full max-w-md bg-white shadow-xl rounded-xl p-8">
+        <section className="rounded-[36px] border border-stone-200 bg-white p-8 shadow-[0_30px_70px_-40px_rgba(28,25,23,0.5)] sm:p-10">
+          <div className="mb-8 flex items-center gap-4">
+            <img
+              src={logo}
+              alt="NomNom"
+              className="size-16 rounded-2xl border border-stone-200 bg-white p-2"
+            />
+            <div>
+              <p className="text-2xl font-semibold text-stone-900">NomNom</p>
+              <p className="text-sm text-stone-500">Fresh kitchen favorites</p>
+            </div>
+          </div>
 
-        <div className="flex justify-center mb-6">
-          <img src={logo} alt="NomNom" className="w-44" />
-        </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-stone-700">Email</label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                className="h-12 rounded-2xl border-stone-300"
+              />
+            </div>
 
-        <h2 className="text-2xl font-bold text-center text-[#E53935] mb-6">
-          Welcome Back
-        </h2>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-stone-700">Password</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                className="h-12 rounded-2xl border-stone-300"
+              />
+            </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-12 w-full rounded-full bg-stone-900 text-white hover:bg-amber-600"
+            >
+              {loading ? "Signing in..." : "Login"}
+            </Button>
+          </form>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#E53935]"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#E53935]"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#E53935] hover:bg-[#FFC107] text-white py-2 rounded-lg"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-
-        </form>
-
-        <p className="text-center mt-6 text-sm">
-          Don’t have an account?{" "}
-          <Link to="/signup" className="text-[#E53935] font-semibold">
-            Sign up
-          </Link>
-        </p>
-
+          <p className="mt-6 text-sm text-stone-600">
+            New to NomNom?{" "}
+            <Link to="/signup" className="font-semibold text-amber-700 hover:text-amber-800">
+              Create an account
+            </Link>
+          </p>
+        </section>
       </div>
-
     </div>
   );
 };
