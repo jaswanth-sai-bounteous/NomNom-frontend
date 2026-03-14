@@ -4,7 +4,7 @@ import { ShoppingBag, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { checkoutOrder, fetchCart } from "@/api";
+import { checkoutOrder, createStripeCheckoutSession, fetchCart } from "@/api";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import SectionHeading from "@/components/SectionHeading";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ const CartPage = () => {
     mutationFn: () =>
       checkoutOrder({
         shippingAddress: "NomNom default delivery address",
-        paymentMethod: "Cash on delivery",
+        paymentMethod: "COD",
       }),
     onSuccess: (order) => {
       addOrder(order);
@@ -52,6 +52,23 @@ const CartPage = () => {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Checkout failed");
+    },
+  });
+
+  const stripeCheckoutMutation = useMutation({
+    mutationFn: async () =>
+      createStripeCheckoutSession({
+        items: items.map((item) => ({
+          name: item.product.title,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+      }),
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Stripe checkout failed");
     },
   });
 
@@ -71,6 +88,15 @@ const CartPage = () => {
     }
 
     checkoutMutation.mutate();
+  };
+
+  const handleStripeCheckout = () => {
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    stripeCheckoutMutation.mutate();
   };
 
   return (
@@ -190,9 +216,17 @@ const CartPage = () => {
             <Button
               className="mt-8 h-12 w-full rounded-full bg-stone-900 text-white hover:bg-amber-600"
               onClick={handleCheckout}
-              disabled={checkoutMutation.isPending || isSaving}
+              disabled={checkoutMutation.isPending || stripeCheckoutMutation.isPending || isSaving}
             >
-              Place order
+              Place order (COD)
+            </Button>
+
+            <Button
+              className="mt-3 h-12 w-full rounded-full bg-emerald-700 text-white hover:bg-emerald-800"
+              onClick={handleStripeCheckout}
+              disabled={checkoutMutation.isPending || stripeCheckoutMutation.isPending || isSaving}
+            >
+              Pay with Stripe
             </Button>
 
             <Button
