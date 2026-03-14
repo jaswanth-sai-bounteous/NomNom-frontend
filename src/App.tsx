@@ -26,6 +26,12 @@ const OrdersPage = lazy(lazyWithRetry(() => import("@/pages/OrdersPage"), "order
 const ProductDetailPage = lazy(
   lazyWithRetry(() => import("@/pages/ProductDetailPage"), "product-detail"),
 );
+const PaymentCancelPage = lazy(
+  lazyWithRetry(() => import("@/pages/PaymentCancelPage"), "payment-cancel"),
+);
+const PaymentSuccessPage = lazy(
+  lazyWithRetry(() => import("@/pages/PaymentSuccessPage"), "payment-success"),
+);
 const Signup = lazy(lazyWithRetry(() => import("@/pages/Signup"), "signup"));
 
 const ProtectedRoute = () => {
@@ -94,7 +100,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<Navigate to={isAuthenticated() ? "/home" : "/login"} replace />}
+          element={<Navigate to="/login" replace />}
         />
 
         <Route element={<GuestOnlyRoute />}>
@@ -115,6 +121,23 @@ function App() {
             }
           />
         </Route>
+
+        <Route
+          path="/success"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <PaymentSuccessPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/cancel"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <PaymentCancelPage />
+            </Suspense>
+          }
+        />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
