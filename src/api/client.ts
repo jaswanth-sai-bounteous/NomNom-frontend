@@ -28,7 +28,7 @@ const getErrorMessage = (data: unknown, fallbackMessage: string) => {
 
   return fallbackMessage;
 };
-
+//add a type of array for auto completion
 export async function requestJson<T>(
   endpoint: string,
   schema: z.ZodType<T>,
@@ -87,6 +87,7 @@ const refreshAccessToken = async () => {
       const storedUser = getStoredUser();
 
       if (storedUser) {
+        //not needed to store in local
         saveAuth(data.token, storedUser);
         syncUserStores(storedUser);
       }

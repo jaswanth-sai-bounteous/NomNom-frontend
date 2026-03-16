@@ -41,6 +41,7 @@ export const useOrderStore = create<OrderStore>()(
         set((state) => ({
           orders: [order, ...state.orders],
         })),
+        // figure this out
       clearOrders: () => set({ orders: [] }),
       resetOrdersForLogout: () => set({ ownerUserId: null, orders: [] }),
     }),
