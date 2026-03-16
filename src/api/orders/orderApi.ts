@@ -1,4 +1,5 @@
 import { requestJson } from "@/api/client";
+import { messageResponseSchema } from "@/types/api";
 import { checkoutResponseSchema, ordersResponseSchema } from "@/types/order";
 
 type CheckoutInput = {
@@ -24,4 +25,14 @@ export async function checkoutOrder(values: CheckoutInput) {
   );
 
   return response.order;
+}
+
+export async function clearOrdersRequest() {
+  return requestJson(
+    "/orders",
+    messageResponseSchema,
+    {
+      method: "DELETE",
+    },
+  );
 }

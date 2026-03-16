@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-import { fetchOrders } from "@/api";
+import { clearOrdersRequest, fetchOrders } from "@/api";
 import SectionHeading from "@/components/SectionHeading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,24 @@ import { syncOrdersFromServer } from "@/lib/storeSync";
 import { useOrderStore } from "@/store/orderStore";
 
 const OrdersPage = () => {
+  const queryClient = useQueryClient();
   const user = getStoredUser();
-  const { orders, clearOrders } = useOrderStore();
+  const { orders } = useOrderStore();
   const { data: serverOrders, isLoading } = useQuery({
     queryKey: ["orders", user?.id ?? "guest"],
     queryFn: fetchOrders,
     enabled: Boolean(user?.id),
+  });
+  const clearOrdersMutation = useMutation({
+    mutationFn: clearOrdersRequest,
+    onSuccess: async () => {
+      syncOrdersFromServer([]);
+      await queryClient.invalidateQueries({ queryKey: ["orders", user?.id ?? "guest"] });
+      toast.success("Orders cleared successfully");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not clear orders");
+    },
   });
 
   useEffect(() => {
@@ -39,9 +52,10 @@ const OrdersPage = () => {
           <Button
             variant="outline"
             className="h-11 rounded-full border-stone-300"
-            onClick={clearOrders}
+            onClick={() => clearOrdersMutation.mutate()}
+            disabled={clearOrdersMutation.isPending}
           >
-            Clear orders
+            {clearOrdersMutation.isPending ? "Clearing..." : "Clear orders"}
           </Button>
         ) : null}
       </div>

@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 
-import { fetchCart, fetchCurrentUser } from "@/api";
+import { fetchCart, fetchCurrentUser, fetchOrders } from "@/api";
 import RouteFallback from "@/components/RouteFallback";
 import { Toaster } from "@/components/ui/sonner";
 import MainLayout from "@/components/layout/MainLayout";
@@ -15,7 +15,12 @@ import {
 } from "@/lib/auth";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { queryClient } from "@/lib/queryClient";
-import { clearUserStores, syncCartFromServer, syncUserStores } from "@/lib/storeSync";
+import {
+  clearUserStores,
+  syncCartFromServer,
+  syncOrdersFromServer,
+  syncUserStores,
+} from "@/lib/storeSync";
 
 const About = lazy(lazyWithRetry(() => import("@/components/About"), "about"));
 const CartPage = lazy(lazyWithRetry(() => import("@/pages/CartPage"), "cart"));
@@ -49,6 +54,12 @@ const ProtectedRoute = () => {
     enabled: Boolean(token),
     retry: false,
   });
+  const { data: ordersData } = useQuery({
+    queryKey: ["orders", storedUser?.id ?? token],
+    queryFn: fetchOrders,
+    enabled: Boolean(token),
+    retry: false,
+  });
 
   useEffect(() => {
     if (token && data?.user) {
@@ -62,6 +73,12 @@ const ProtectedRoute = () => {
       syncCartFromServer(cartData);
     }
   }, [cartData]);
+
+  useEffect(() => {
+    if (ordersData) {
+      syncOrdersFromServer(ordersData);
+    }
+  }, [ordersData]);
 
   useEffect(() => {
     if (isError) {
