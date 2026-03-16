@@ -3,12 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import logo from "@/assets/NomNom.png";
-import { loginUser } from "@/api";
+import { fetchCart, loginUser } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveAuth } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { syncUserStores } from "@/lib/storeSync";
+import { syncCartFromServer, syncUserStores } from "@/lib/storeSync";
 import { loginFormSchema } from "@/types/auth";
 
 const Login = () => {
@@ -39,6 +39,7 @@ const Login = () => {
       const data = await loginUser(parsedForm.data);
       saveAuth(data.token, data.user);
       syncUserStores(data.user);
+      syncCartFromServer(await fetchCart());
       toast.success("Login successful");
       navigate("/home");
     } catch (error) {

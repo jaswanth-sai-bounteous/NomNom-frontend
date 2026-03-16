@@ -3,12 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import logo from "@/assets/NomNom.png";
-import { signupUser } from "@/api";
+import { fetchCart, signupUser } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveAuth } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { syncUserStores } from "@/lib/storeSync";
+import { syncCartFromServer, syncUserStores } from "@/lib/storeSync";
 import { signupFormSchema } from "@/types/auth";
 
 const Signup = () => {
@@ -42,6 +42,7 @@ const Signup = () => {
       if (data.token && data.user) {
         saveAuth(data.token, data.user);
         syncUserStores(data.user);
+        syncCartFromServer(await fetchCart());
         toast.success("Account created successfully");
         navigate("/home");
         return;

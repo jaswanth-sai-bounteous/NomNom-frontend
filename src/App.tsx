@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 
-import { fetchCurrentUser } from "@/api";
+import { fetchCart, fetchCurrentUser } from "@/api";
 import RouteFallback from "@/components/RouteFallback";
 import { Toaster } from "@/components/ui/sonner";
 import MainLayout from "@/components/layout/MainLayout";
@@ -15,7 +15,7 @@ import {
 } from "@/lib/auth";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { queryClient } from "@/lib/queryClient";
-import { clearUserStores, syncUserStores } from "@/lib/storeSync";
+import { clearUserStores, syncCartFromServer, syncUserStores } from "@/lib/storeSync";
 
 const About = lazy(lazyWithRetry(() => import("@/components/About"), "about"));
 const CartPage = lazy(lazyWithRetry(() => import("@/pages/CartPage"), "cart"));
@@ -43,6 +43,12 @@ const ProtectedRoute = () => {
     enabled: Boolean(token),
     retry: false,
   });
+  const { data: cartData } = useQuery({
+    queryKey: ["cart", storedUser?.id ?? token],
+    queryFn: fetchCart,
+    enabled: Boolean(token),
+    retry: false,
+  });
 
   useEffect(() => {
     if (token && data?.user) {
@@ -50,6 +56,12 @@ const ProtectedRoute = () => {
       syncUserStores(data.user);
     }
   }, [data, token]);
+
+  useEffect(() => {
+    if (cartData) {
+      syncCartFromServer(cartData);
+    }
+  }, [cartData]);
 
   useEffect(() => {
     if (isError) {
