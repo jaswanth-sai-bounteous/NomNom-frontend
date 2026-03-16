@@ -21,6 +21,8 @@ import {
   syncOrdersFromServer,
   syncUserStores,
 } from "@/lib/storeSync";
+import { useCartStore } from "@/store/cartStore";
+import { useOrderStore } from "@/store/orderStore";
 
 const About = lazy(lazyWithRetry(() => import("@/components/About"), "about"));
 const CartPage = lazy(lazyWithRetry(() => import("@/pages/CartPage"), "cart"));
@@ -42,19 +44,21 @@ const Signup = lazy(lazyWithRetry(() => import("@/pages/Signup"), "signup"));
 const ProtectedRoute = () => {
   const token = getStoredToken();
   const storedUser = getStoredUser();
+  const hasLoadedCartFromServer = useCartStore((state) => state.hasLoadedFromServer);
+  const hasLoadedOrdersFromServer = useOrderStore((state) => state.hasLoadedFromServer);
   const { data, isFetching, isError } = useQuery({
     queryKey: ["current-user", token],
     queryFn: fetchCurrentUser,
     enabled: Boolean(token),
     retry: false,
   });
-  const { data: cartData } = useQuery({
+  const { data: cartData, isLoading: isCartLoading } = useQuery({
     queryKey: ["cart", storedUser?.id ?? token],
     queryFn: fetchCart,
     enabled: Boolean(token),
     retry: false,
   });
-  const { data: ordersData } = useQuery({
+  const { data: ordersData, isLoading: isOrdersLoading } = useQuery({
     queryKey: ["orders", storedUser?.id ?? token],
     queryFn: fetchOrders,
     enabled: Boolean(token),
@@ -108,6 +112,14 @@ const ProtectedRoute = () => {
 
   if (isError) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!hasLoadedCartFromServer && isCartLoading) {
+    return <RouteFallback />;
+  }
+
+  if (!hasLoadedOrdersFromServer && isOrdersLoading) {
+    return <RouteFallback />;
   }
 
   return <Outlet />;

@@ -6,6 +6,7 @@ import type { CartItem } from "@/types";
 type CartStore = {
   ownerUserId: string | null;
   items: CartItem[];
+  hasLoadedFromServer: boolean;
   setOwner: (userId: string) => void;
   setItems: (items: CartItem[]) => void;
   addItemLocally: (item: CartItem) => void;
@@ -25,20 +26,14 @@ export const useCartStore = create<CartStore>()(
     (set) => ({
       ownerUserId: null,
       items: [],
+      hasLoadedFromServer: false,
       setOwner: (userId) =>
-        set((state) => {
-          if (state.ownerUserId && state.ownerUserId !== userId) {
-            return {
-              ownerUserId: userId,
-              items: [],
-            };
-          }
-
-          return {
-            ownerUserId: userId,
-          };
+        set({
+          ownerUserId: userId,
+          items: [],
+          hasLoadedFromServer: false,
         }),
-      setItems: (items) => set({ items }),
+      setItems: (items) => set({ items, hasLoadedFromServer: true }),
       addItemLocally: (newItem) =>
         set((state) => {
           const existingItem = state.items.find(
@@ -74,10 +69,14 @@ export const useCartStore = create<CartStore>()(
           items: state.items.filter((item) => item.product.id !== productId),
         })),
       clearCart: () => set({ items: [] }),
-      resetCartForLogout: () => set({ ownerUserId: null, items: [] }),
+      resetCartForLogout: () => set({ ownerUserId: null, items: [], hasLoadedFromServer: false }),
     }),
     {
       name: "nomnom-cart",
+      partialize: (state) => ({
+        ownerUserId: state.ownerUserId,
+        items: state.items,
+      }),
     },
   ),
 );

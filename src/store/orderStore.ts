@@ -6,6 +6,7 @@ import type { ServerOrder } from "@/types";
 type OrderStore = {
   ownerUserId: string | null;
   orders: ServerOrder[];
+  hasLoadedFromServer: boolean;
   setOwner: (userId: string) => void;
   setOrders: (orders: ServerOrder[]) => void;
   addOrder: (order: ServerOrder) => void;
@@ -23,30 +24,29 @@ export const useOrderStore = create<OrderStore>()(
     (set) => ({
       ownerUserId: null,
       orders: [],
+      hasLoadedFromServer: false,
       setOwner: (userId) =>
-        set((state) => {
-          if (state.ownerUserId && state.ownerUserId !== userId) {
-            return {
-              ownerUserId: userId,
-              orders: [],
-            };
-          }
-
-          return {
-            ownerUserId: userId,
-          };
+        set({
+          ownerUserId: userId,
+          orders: [],
+          hasLoadedFromServer: false,
         }),
-      setOrders: (orders) => set({ orders }),
+      setOrders: (orders) => set({ orders, hasLoadedFromServer: true }),
       addOrder: (order) =>
         set((state) => ({
           orders: [order, ...state.orders],
+          hasLoadedFromServer: true,
         })),
-        // figure this out
       clearOrders: () => set({ orders: [] }),
-      resetOrdersForLogout: () => set({ ownerUserId: null, orders: [] }),
+      resetOrdersForLogout: () =>
+        set({ ownerUserId: null, orders: [], hasLoadedFromServer: false }),
     }),
     {
       name: "nomnom-orders",
+      partialize: (state) => ({
+        ownerUserId: state.ownerUserId,
+        orders: state.orders,
+      }),
     },
   ),
 );
