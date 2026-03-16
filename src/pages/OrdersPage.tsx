@@ -26,7 +26,11 @@ const OrdersPage = () => {
     mutationFn: clearOrdersRequest,
     onSuccess: async () => {
       syncOrdersFromServer([]);
-      await queryClient.invalidateQueries({ queryKey: ["orders", user?.id ?? "guest"] });
+      queryClient.setQueryData(["orders", user?.id ?? "guest"], []);
+      await queryClient.invalidateQueries({
+        queryKey: ["orders", user?.id ?? "guest"],
+        refetchType: "active",
+      });
       toast.success("Orders cleared successfully");
     },
     onError: (error) => {

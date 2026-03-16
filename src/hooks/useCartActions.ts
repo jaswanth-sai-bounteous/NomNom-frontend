@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
@@ -8,9 +8,10 @@ import {
   removeCartItem,
   updateCartItem,
 } from "@/api";
+import { getStoredUser } from "@/lib/auth";
 import { syncCartFromServer } from "@/lib/storeSync";
 import { useCartStore } from "@/store/cartStore";
-import type { Product } from "@/types";
+import type { Product, ServerCart } from "@/types";
 
 type PendingQuantityMap = Record<string, ReturnType<typeof setTimeout>>;
 type RequestVersionMap = Record<string, number>;
@@ -21,6 +22,8 @@ type RequestVersionMap = Record<string, number>;
   Output: helper functions that update the local UI immediately and then sync with the server.
 */
 export const useCartActions = () => {
+  const queryClient = useQueryClient();
+  const user = getStoredUser();
   const addItemLocally = useCartStore((state) => state.addItemLocally);
   const updateQuantityLocally = useCartStore((state) => state.updateQuantityLocally);
   const removeItemLocally = useCartStore((state) => state.removeItemLocally);
@@ -58,6 +61,14 @@ export const useCartActions = () => {
   const clearMutation = useMutation({
     mutationFn: clearCartRequest,
   });
+
+  const syncCartState = useCallback(
+    (cart: ServerCart) => {
+      syncCartFromServer(cart);
+      queryClient.setQueryData(["cart", user?.id ?? "guest"], cart);
+    },
+    [queryClient, user?.id],
+  );
 
   /*
     Input: product id.
@@ -134,7 +145,7 @@ export const useCartActions = () => {
             isLatestRequest(productId, requestVersion) &&
             isLatestCartAction(cartActionVersion)
           ) {
-            syncCartFromServer(cart);
+            syncCartState(cart);
           }
         } catch (error) {
           if (
@@ -153,6 +164,7 @@ export const useCartActions = () => {
       isLatestCartAction,
       isLatestRequest,
       removeMutation,
+      syncCartState,
       updateMutation,
     ],
   );
@@ -190,7 +202,7 @@ export const useCartActions = () => {
           isLatestRequest(product.id, requestVersion) &&
           isLatestCartAction(cartActionVersion)
         ) {
-          syncCartFromServer(cart);
+          syncCartState(cart);
         }
       } catch (error) {
         if (
@@ -211,6 +223,7 @@ export const useCartActions = () => {
       isLatestCartAction,
       isLatestRequest,
       scheduleQuantitySync,
+      syncCartState,
     ],
   );
 
@@ -253,7 +266,7 @@ export const useCartActions = () => {
           isLatestRequest(productId, requestVersion) &&
           isLatestCartAction(cartActionVersion)
         ) {
-          syncCartFromServer(cart);
+          syncCartState(cart);
         }
       } catch (error) {
         if (
@@ -272,6 +285,7 @@ export const useCartActions = () => {
       isLatestRequest,
       removeItemLocally,
       removeMutation,
+      syncCartState,
     ],
   );
 
@@ -292,7 +306,7 @@ export const useCartActions = () => {
     try {
       const cart = await clearMutation.mutateAsync();
       if (isLatestCartAction(cartActionVersion)) {
-        syncCartFromServer(cart);
+        syncCartState(cart);
       }
     } catch (error) {
       if (isLatestCartAction(cartActionVersion)) {
@@ -300,7 +314,7 @@ export const useCartActions = () => {
         toast.error(error instanceof Error ? error.message : "Could not clear cart");
       }
     }
-  }, [clearCart, clearMutation, createCartActionVersion, isLatestCartAction]);
+  }, [clearCart, clearMutation, createCartActionVersion, isLatestCartAction, syncCartState]);
 
   useEffect(() => {
     return () => {

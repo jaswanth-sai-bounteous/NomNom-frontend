@@ -14,6 +14,7 @@ import { syncCartFromServer, syncOrdersFromServer } from "@/lib/storeSync";
 import { getStoredUser } from "@/lib/auth";
 import { useCartStore } from "@/store/cartStore";
 import { useOrderStore } from "@/store/orderStore";
+import type { ServerCart } from "@/types";
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -42,11 +43,16 @@ const CartPage = () => {
         paymentMethod: "COD",
       }),
     onSuccess: (order) => {
+      const nextOrders = [order, ...useOrderStore.getState().orders];
+      const clearedCart: ServerCart = { cart: serverCart?.cart ?? null, items: [] };
+
       addOrder(order);
-      syncOrdersFromServer([order, ...useOrderStore.getState().orders]);
-      syncCartFromServer({ cart: serverCart?.cart ?? null, items: [] });
-      void queryClient.invalidateQueries({ queryKey: ["cart", user?.id ?? "guest"] });
-      void queryClient.invalidateQueries({ queryKey: ["orders", user?.id ?? "guest"] });
+      syncOrdersFromServer(nextOrders);
+      syncCartFromServer(clearedCart);
+      queryClient.setQueryData(["orders", user?.id ?? "guest"], nextOrders);
+      queryClient.setQueryData(["cart", user?.id ?? "guest"], clearedCart);
+      void queryClient.invalidateQueries({ queryKey: ["cart", user?.id ?? "guest"], refetchType: "active" });
+      void queryClient.invalidateQueries({ queryKey: ["orders", user?.id ?? "guest"], refetchType: "active" });
       toast.success("Order placed successfully");
       navigate("/orders");
     },
