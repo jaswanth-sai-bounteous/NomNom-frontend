@@ -28,6 +28,20 @@ const getErrorMessage = (data: unknown, fallbackMessage: string) => {
 
   return fallbackMessage;
 };
+
+const getTokenFromResponse = (data: unknown) => {
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !("token" in data) ||
+    typeof data.token !== "string"
+  ) {
+    return null;
+  }
+
+  return data.token;
+};
+
 //add a type of array for auto completion
 export async function requestJson<T>(
   endpoint: string,
@@ -35,7 +49,13 @@ export async function requestJson<T>(
   init?: RequestInit,
 ): Promise<T> {
   const response = await requestWithAutoRefresh(endpoint, init);
-  const data = await response.json().catch(() => null);
+  let data: unknown = null;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -72,30 +92,39 @@ const fetchJsonResponse = async (endpoint: string, init?: RequestInit) => {
 const refreshAccessToken = async () => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
-      const response = await fetchJsonResponse(AUTH_REFRESH_ENDPOINT, {
-        method: "POST",
-      });
+      try {
+        const response = await fetchJsonResponse(AUTH_REFRESH_ENDPOINT, {
+          method: "POST",
+        });
 
-      const data = await response.json().catch(() => null);
+        let data: unknown = null;
 
-      if (!response.ok || !data || typeof data !== "object" || typeof data.token !== "string") {
-        clearAuth();
-        clearUserStores();
-        return null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+
+        const token = getTokenFromResponse(data);
+
+        if (!response.ok || !token) {
+          clearAuth();
+          clearUserStores();
+          return null;
+        }
+
+        const storedUser = getStoredUser();
+
+        if (storedUser) {
+          saveAuth(token, storedUser);
+          syncUserStores(storedUser);
+        }
+
+        return token;
+      } finally {
+        refreshPromise = null;
       }
-
-      const storedUser = getStoredUser();
-
-      if (storedUser) {
-        //not needed to store in local
-        saveAuth(data.token, storedUser);
-        syncUserStores(storedUser);
-      }
-
-      return data.token;
-    })().finally(() => {
-      refreshPromise = null;
-    });
+    })();
   }
 
   return refreshPromise;
@@ -105,6 +134,7 @@ const refreshAccessToken = async () => {
   Input: request endpoint + request options.
   Output: a successful response, retrying once after refresh if access token expired.
 */
+
 const requestWithAutoRefresh = async (endpoint: string, init?: RequestInit) => {
   const response = await fetchJsonResponse(endpoint, init);
 
