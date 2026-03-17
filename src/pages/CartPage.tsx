@@ -68,7 +68,7 @@ const CartPage = () => {
           name: item.product.title,
           price: item.product.price,
           quantity: item.quantity,
-        })),
+        })), 
       }),
     onSuccess: ({ url }) => {
       window.location.assign(url);

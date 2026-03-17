@@ -86,6 +86,7 @@ export const useCartStore = create<CartStore>()(
   Output: total number of units across the whole cart.
   Example: 2 burgers + 3 fries returns 5.
 */
+
 export const getCartQuantityTotal = (items: CartItem[]) =>
   items.reduce((total, item) => total + item.quantity, 0);
 
@@ -94,4 +95,5 @@ export const getCartQuantityTotal = (items: CartItem[]) =>
   Output: number of different products in the cart.
   Example: burgers + fries returns 2.
 */
+
 export const getCartProductCount = (items: CartItem[]) => items.length;

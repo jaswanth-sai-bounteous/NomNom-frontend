@@ -9,11 +9,13 @@ import {
   updateCartItem,
 } from "@/api";
 import { getStoredUser } from "@/lib/auth";
+import { debounce } from "@/lib/debounce";
 import { syncCartFromServer } from "@/lib/storeSync";
 import { useCartStore } from "@/store/cartStore";
-import type { Product, ServerCart } from "@/types";
+import type { CartItem, Product, ServerCart } from "@/types";
 
-type PendingQuantityMap = Record<string, ReturnType<typeof setTimeout>>;
+type PendingQuantitySync = ReturnType<typeof debounce<[number, CartItem[]]>>;
+type PendingQuantityMap = Record<string, PendingQuantitySync>;
 type RequestVersionMap = Record<string, number>;
 
 /*
@@ -124,39 +126,41 @@ export const useCartActions = () => {
   */
   const scheduleQuantitySync = useCallback(
     (productId: string, quantity: number, rollbackItems = useCartStore.getState().items) => {
-      const existingTimer = pendingQuantityTimersRef.current[productId];
+      let debouncedSync = pendingQuantityTimersRef.current[productId];
 
-      if (existingTimer) {
-        clearTimeout(existingTimer);
+      if (!debouncedSync) {
+        debouncedSync = debounce(async (nextQuantity, nextRollbackItems) => {
+          delete pendingQuantityTimersRef.current[productId];
+          const requestVersion = createRequestVersion(productId);
+          const cartActionVersion = createCartActionVersion();
+
+          try {
+            const cart =
+              nextQuantity <= 0
+                ? await removeMutation.mutateAsync(productId)
+                : await updateMutation.mutateAsync({ productId, quantity: nextQuantity });
+
+            if (
+              isLatestRequest(productId, requestVersion) &&
+              isLatestCartAction(cartActionVersion)
+            ) {
+              syncCartState(cart);
+            }
+          } catch (error) {
+            if (
+              isLatestRequest(productId, requestVersion) &&
+              isLatestCartAction(cartActionVersion)
+            ) {
+              useCartStore.getState().setItems(nextRollbackItems);
+              toast.error(error instanceof Error ? error.message : "Could not update cart");
+            }
+          }
+        });
+
+        pendingQuantityTimersRef.current[productId] = debouncedSync;
       }
 
-      pendingQuantityTimersRef.current[productId] = setTimeout(async () => {
-        delete pendingQuantityTimersRef.current[productId];
-        const requestVersion = createRequestVersion(productId);
-        const cartActionVersion = createCartActionVersion();
-
-        try {
-          const cart =
-            quantity <= 0
-              ? await removeMutation.mutateAsync(productId)
-              : await updateMutation.mutateAsync({ productId, quantity });
-
-          if (
-            isLatestRequest(productId, requestVersion) &&
-            isLatestCartAction(cartActionVersion)
-          ) {
-            syncCartState(cart);
-          }
-        } catch (error) {
-          if (
-            isLatestRequest(productId, requestVersion) &&
-            isLatestCartAction(cartActionVersion)
-          ) {
-            useCartStore.getState().setItems(rollbackItems);
-            toast.error(error instanceof Error ? error.message : "Could not update cart");
-          }
-        }
-      }, 220);
+      debouncedSync(quantity, rollbackItems);
     },
     [
       createCartActionVersion,
@@ -246,10 +250,10 @@ export const useCartActions = () => {
   */
   const removeProduct = useCallback(
     async (productId: string) => {
-      const existingTimer = pendingQuantityTimersRef.current[productId];
+      const pendingSync = pendingQuantityTimersRef.current[productId];
 
-      if (existingTimer) {
-        clearTimeout(existingTimer);
+      if (pendingSync) {
+        pendingSync.cancel();
         delete pendingQuantityTimersRef.current[productId];
       }
 
@@ -294,8 +298,8 @@ export const useCartActions = () => {
     Output: clears the full cart locally and then syncs the backend.
   */
   const clearAll = useCallback(async () => {
-    Object.values(pendingQuantityTimersRef.current).forEach((timer) => {
-      clearTimeout(timer);
+    Object.values(pendingQuantityTimersRef.current).forEach((pendingSync) => {
+      pendingSync.cancel();
     });
     pendingQuantityTimersRef.current = {};
 
@@ -318,8 +322,8 @@ export const useCartActions = () => {
 
   useEffect(() => {
     return () => {
-      Object.values(pendingQuantityTimersRef.current).forEach((timer) => {
-        clearTimeout(timer);
+      Object.values(pendingQuantityTimersRef.current).forEach((pendingSync) => {
+        pendingSync.cancel();
       });
     };
   }, []);
