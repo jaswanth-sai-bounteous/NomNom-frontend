@@ -17,6 +17,7 @@ const Home = () => {
   // Input: a product from the UI.
   // Output: triggers an optimistic add-to-cart flow.
   const { addProduct } = useCartActions();
+  const cartItems = useCartStore((state) => state.items);
   const cartCount = useCartStore((state) => getCartQuantityTotal(state.items));
   const { data: productsPage, isLoading } = useQuery({
     queryKey: ["home-products"],
@@ -101,6 +102,7 @@ const Home = () => {
                 key={product.id}
                 product={product}
                 onAddToCart={handleAddToCart}
+                isInCart={cartItems.some((item) => item.product.id === product.id)}
               />
             ))}
           </div>

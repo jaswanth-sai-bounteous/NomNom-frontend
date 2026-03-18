@@ -24,6 +24,7 @@ const MenuPage = () => {
   // Output: slower debounced text so we do not refetch on every keystroke.
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   const deferredSearch = useDeferredValue(debouncedSearch);
+  const cartItems = useCartStore((state) => state.items);
   const cartCount = useCartStore((state) => getCartQuantityTotal(state.items));
   const { addProduct } = useCartActions();
 
@@ -112,6 +113,7 @@ const MenuPage = () => {
                 key={product.id}
                 product={product}
                 onAddToCart={handleAddToCart}
+                isInCart={cartItems.some((item) => item.product.id === product.id)}
               />
             ))}
           </div>

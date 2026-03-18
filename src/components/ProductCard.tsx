@@ -17,9 +17,10 @@ import type { Product } from "@/types";
 type ProductCardProps = {
   product: Product;
   onAddToCart?: (product: Product) => void;
+  isInCart?: boolean;
 };
 
-const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+const ProductCard = ({ product, onAddToCart, isInCart = false }: ProductCardProps) => {
   return (
     <Card className="overflow-hidden rounded-[28px] border border-stone-200 bg-white py-0 shadow-[0_18px_40px_-30px_rgba(120,53,15,0.5)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-30px_rgba(120,53,15,0.75)]">
       <Link to={`/product/${product.id}`} className="block">
@@ -63,13 +64,25 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
       </Link>
 
       <CardFooter className="border-none bg-transparent px-5 pb-5 pt-4">
-        <Button
-          className="h-11 w-full rounded-full bg-stone-900 text-white hover:bg-amber-600"
-          onClick={() => onAddToCart?.(product)}
-        >
-          <ShoppingBag className="mr-2 size-4" />
-          Add to cart
-        </Button>
+        {isInCart ? (
+          <Button
+            asChild
+            className="h-11 w-full rounded-full bg-emerald-700 text-white hover:bg-emerald-800"
+          >
+            <Link to="/cart">
+              <ShoppingBag className="mr-2 size-4" />
+              View cart
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            className="h-11 w-full rounded-full bg-stone-900 text-white hover:bg-amber-600"
+            onClick={() => onAddToCart?.(product)}
+          >
+            <ShoppingBag className="mr-2 size-4" />
+            Add to cart
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

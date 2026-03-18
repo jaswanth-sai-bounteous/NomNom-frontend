@@ -181,7 +181,11 @@ export const useCartActions = () => {
     async (product: Product, quantity = 1) => {
       const previousItems = useCartStore.getState().items;
       const existingQuantity = getLocalQuantity(product.id);
-      const successMessage = `${product.title} added to cart`;
+
+      if (existingQuantity > 0) {
+        toast.message(`${product.title} is already in your cart`);
+        return;
+      }
 
       addItemLocally({
         id: crypto.randomUUID(),
@@ -189,44 +193,20 @@ export const useCartActions = () => {
         quantity,
       });
 
-      toast.success(successMessage);
-
-      if (existingQuantity > 0) {
-        scheduleQuantitySync(product.id, existingQuantity + quantity, previousItems);
-        return;
-      }
-
-      const requestVersion = createRequestVersion(product.id);
-      const cartActionVersion = createCartActionVersion();
+      toast.success(`${product.title} added to cart`);
 
       try {
         const cart = await addMutation.mutateAsync({ product, quantity });
-
-        if (
-          isLatestRequest(product.id, requestVersion) &&
-          isLatestCartAction(cartActionVersion)
-        ) {
-          syncCartState(cart);
-        }
+        syncCartState(cart);
       } catch (error) {
-        if (
-          isLatestRequest(product.id, requestVersion) &&
-          isLatestCartAction(cartActionVersion)
-        ) {
-          useCartStore.getState().setItems(previousItems);
-          toast.error(error instanceof Error ? error.message : "Could not update cart");
-        }
+        useCartStore.getState().setItems(previousItems);
+        toast.error(error instanceof Error ? error.message : "Could not update cart");
       }
     },
     [
       addItemLocally,
       addMutation,
-      createCartActionVersion,
-      createRequestVersion,
       getLocalQuantity,
-      isLatestCartAction,
-      isLatestRequest,
-      scheduleQuantitySync,
       syncCartState,
     ],
   );

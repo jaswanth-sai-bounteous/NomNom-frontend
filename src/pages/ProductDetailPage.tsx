@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChefHat, Minus, Plus, ShoppingBag } from "lucide-react";
 
@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCartActions } from "@/hooks/useCartActions";
+import { useCartStore } from "@/store/cartStore";
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ const ProductDetailPage = () => {
   // Input: product + amount.
   // Output: sends an optimistic add-to-cart request and syncs with the backend.
   const { addProduct } = useCartActions();
+  const cartItems = useCartStore((state) => state.items);
 
   const {
     data: product,
@@ -62,6 +64,8 @@ const ProductDetailPage = () => {
   const handleAddToCart = (selectedProduct: Product, amount = quantity) => {
     void addProduct(selectedProduct, amount);
   };
+
+  const isInCart = cartItems.some((item) => item.product.id === product?.id);
 
   if (isLoading) {
     return <PageSkeleton blocks={1} cards={3} />;
@@ -146,13 +150,25 @@ const ProductDetailPage = () => {
               </button>
             </div>
 
-            <Button
-              className="h-12 rounded-full bg-stone-900 px-6 text-white hover:bg-amber-600"
-              onClick={() => handleAddToCart(product)}
-            >
-              <ShoppingBag className="mr-2 size-4" />
-              Add to cart
-            </Button>
+            {isInCart ? (
+              <Button
+                asChild
+                className="h-12 rounded-full bg-emerald-700 px-6 text-white hover:bg-emerald-800"
+              >
+                <Link to="/cart">
+                  <ShoppingBag className="mr-2 size-4" />
+                  View cart
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                className="h-12 rounded-full bg-stone-900 px-6 text-white hover:bg-amber-600"
+                onClick={() => handleAddToCart(product)}
+              >
+                <ShoppingBag className="mr-2 size-4" />
+                Add to cart
+              </Button>
+            )}
           </CardFooter>
         </div>
       </Card>
@@ -170,6 +186,7 @@ const ProductDetailPage = () => {
               key={suggestedProduct.id}
               product={suggestedProduct}
               onAddToCart={(item) => handleAddToCart(item, 1)}
+              isInCart={cartItems.some((item) => item.product.id === suggestedProduct.id)}
             />
           ))}
         </div>
