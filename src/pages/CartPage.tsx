@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShoppingBag, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -46,10 +47,15 @@ const CartPage = () => {
   const items = useCartStore((state) => state.items);
   const isLoading = useCartStore((state) => state.isLoading);
   const isSaving = useCartStore((state) => state.isSaving);
+  const fetchCart = useCartStore((state) => state.fetchCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeProduct = useCartStore((state) => state.removeProduct);
   const clearAll = useCartStore((state) => state.clearAll);
   const checkoutMutation = useCheckoutCart();
+
+  useEffect(() => {
+    void fetchCart().catch(() => undefined);
+  }, [fetchCart]);
 
   const subtotal = items.reduce(
     (total, item) => total + item.product.price * item.quantity,

@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 
-import { fetchCurrentUser, fetchOrders } from "@/api";
+import { fetchCurrentUser } from "@/api";
 import RouteFallback from "@/components/RouteFallback";
 import { Toaster } from "@/components/ui/sonner";
 import MainLayout from "@/components/layout/MainLayout";
@@ -15,7 +15,6 @@ import {
 } from "@/lib/auth";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { queryClient } from "@/lib/queryClient";
-import { useCartStore } from "@/store/cartStore";
 
 const About = lazy(lazyWithRetry(() => import("@/components/About"), "about"));
 const CartPage = lazy(lazyWithRetry(() => import("@/pages/CartPage"), "cart"));
@@ -30,7 +29,6 @@ const Signup = lazy(lazyWithRetry(() => import("@/pages/Signup"), "signup"));
 
 const resetSessionState = async () => {
   clearAuth();
-  useCartStore.getState().resetCart();
   await queryClient.removeQueries({
     predicate: (query) => {
       const firstKey = query.queryKey[0];
@@ -42,16 +40,9 @@ const resetSessionState = async () => {
 const useProtectedSession = () => {
   const token = getStoredToken();
   const storedUser = getStoredUser();
-  const fetchCart = useCartStore((state) => state.fetchCart);
   const { data, isFetching, isError } = useQuery({
     queryKey: ["current-user", token],
     queryFn: fetchCurrentUser,
-    enabled: Boolean(token),
-    retry: false,
-  });
-  const { isLoading: isOrdersLoading } = useQuery({
-    queryKey: ["orders", storedUser?.id ?? token],
-    queryFn: fetchOrders,
     enabled: Boolean(token),
     retry: false,
   });
@@ -61,12 +52,6 @@ const useProtectedSession = () => {
       saveAuth(token, data.user);
     }
   }, [data, token]);
-
-  useEffect(() => {
-    if (token) {
-      void fetchCart().catch(() => undefined);
-    }
-  }, [fetchCart, token]);
 
   useEffect(() => {
     if (isError) {
@@ -79,7 +64,6 @@ const useProtectedSession = () => {
     storedUser,
     isFetchingUser: isFetching,
     isAuthError: isError,
-    isOrdersLoading,
   };
 };
 
@@ -89,7 +73,6 @@ const ProtectedRoute = () => {
     storedUser,
     isFetchingUser,
     isAuthError,
-    isOrdersLoading,
   } = useProtectedSession();
 
   if (!token) {
@@ -107,10 +90,6 @@ const ProtectedRoute = () => {
 
   if (isAuthError) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (isOrdersLoading) {
-    return <RouteFallback />;
   }
 
   return <Outlet />;

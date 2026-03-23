@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Menu, ShoppingCart, X } from "lucide-react";
@@ -24,8 +24,15 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const cartCount = useCartStore((state) => getCartQuantityTotal(state.items));
+  const fetchCart = useCartStore((state) => state.fetchCart);
   const user = getStoredUser();
   const resetCart = useCartStore((state) => state.resetCart);
+
+  useEffect(() => {
+    if (user?.id) {
+      void fetchCart().catch(() => undefined);
+    }
+  }, [fetchCart, user?.id]);
 
   const handleLogout = async () => {
     try {
