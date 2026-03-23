@@ -3,12 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import logo from "@/assets/NomNom.png";
-import { fetchCart, fetchOrders, loginUser } from "@/api";
+import { loginUser } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveAuth } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { syncCartFromServer, syncOrdersFromServer, syncUserStores } from "@/lib/storeSync";
+import { useCartStore } from "@/store/cartStore";
 import { loginFormSchema } from "@/types/auth";
 
 const Login = () => {
@@ -36,11 +36,10 @@ const Login = () => {
           return firstKey === "cart" || firstKey === "orders" || firstKey === "current-user";
         },
       });
+      useCartStore.getState().resetCart();
       const data = await loginUser(parsedForm.data);
       saveAuth(data.token, data.user);
-      syncUserStores(data.user);
-      syncCartFromServer(await fetchCart());
-      syncOrdersFromServer(await fetchOrders());
+      await useCartStore.getState().fetchCart();
       toast.success("Login successful");
       navigate("/home");
     } catch (error) {

@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -10,14 +9,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getStoredUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/format";
-import { syncOrdersFromServer } from "@/lib/storeSync";
-import { useOrderStore } from "@/store/orderStore";
 
 const OrdersPage = () => {
   const queryClient = useQueryClient();
   const user = getStoredUser();
-  const { orders } = useOrderStore();
-  const { data: serverOrders, isLoading } = useQuery({
+  const { data: orders = [], isLoading } = useQuery({
     queryKey: ["orders", user?.id ?? "guest"],
     queryFn: fetchOrders,
     enabled: Boolean(user?.id),
@@ -25,7 +21,6 @@ const OrdersPage = () => {
   const clearOrdersMutation = useMutation({
     mutationFn: clearOrdersRequest,
     onSuccess: async () => {
-      syncOrdersFromServer([]);
       queryClient.setQueryData(["orders", user?.id ?? "guest"], []);
       await queryClient.invalidateQueries({
         queryKey: ["orders", user?.id ?? "guest"],
@@ -38,19 +33,13 @@ const OrdersPage = () => {
     },
   });
 
-  useEffect(() => {
-    if (serverOrders) {
-      syncOrdersFromServer(serverOrders);
-    }
-  }, [serverOrders]);
-
   return (
     <div className="space-y-10 pb-10">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <SectionHeading
           eyebrow="Orders"
           title="Your completed orders"
-          description="Every checkout is stored in a simple Zustand store so you can view recent order history on this page."
+          description="Your completed orders are loaded directly from the backend so this page stays simple and up to date."
         />
         {orders.length > 0 ? (
           <Button

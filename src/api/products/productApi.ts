@@ -1,4 +1,4 @@
-import { buildQueryString, requestJson } from "@/api/client";
+import { api } from "@/api/client";
 import {
   featuredProductsResponseSchema,
   productResponseSchema,
@@ -16,22 +16,24 @@ export type ProductFilters = {
 export async function fetchProductsPage(
   filters: ProductFilters = {},
 ): Promise<ProductsPage> {
-  const queryString = buildQueryString({
-    page: filters.page ?? 1,
-    limit: filters.limit ?? 9,
-    search: filters.search,
-    categoryId: filters.categoryId,
+  const response = await api.get("/products", {
+    params: {
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 9,
+      search: filters.search,
+      categoryId: filters.categoryId,
+    },
   });
 
-  return requestJson(`/products${queryString}`, productsPageSchema);
+  return productsPageSchema.parse(response.data);
 }
 
 export async function fetchProductById(id: string) {
-  const response = await requestJson(`/products/${id}`, productResponseSchema);
-  return response.product;
+  const response = await api.get(`/products/${id}`);
+  return productResponseSchema.parse(response.data).product;
 }
 
 export async function fetchFeaturedProducts() {
-  const response = await requestJson("/featured", featuredProductsResponseSchema);
-  return response.featured;
+  const response = await api.get("/featured");
+  return featuredProductsResponseSchema.parse(response.data).featured;
 }

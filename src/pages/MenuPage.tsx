@@ -9,7 +9,6 @@ import PageSkeleton from "@/components/PageSkeleton";
 import ProductCard from "@/components/ProductCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { useCartActions } from "@/hooks/useCartActions";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
@@ -26,7 +25,7 @@ const MenuPage = () => {
   const deferredSearch = useDeferredValue(debouncedSearch);
   const cartItems = useCartStore((state) => state.items);
   const cartCount = useCartStore((state) => getCartQuantityTotal(state.items));
-  const { addProduct } = useCartActions();
+  const addProduct = useCartStore((state) => state.addProduct);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -44,9 +43,10 @@ const MenuPage = () => {
     search: deferredSearch.trim(),
     categoryId: activeCategory,
   });
-
+  
   const products = useMemo(
-    () => data?.pages.flatMap((page) => page.products) ?? [],
+    () => 
+       data?.pages.flatMap((page) => page.products) ?? [],
     [data],
   );
   const totalItems = data?.pages[0]?.pagination.totalItems ?? 0;

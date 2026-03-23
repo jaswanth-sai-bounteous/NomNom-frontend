@@ -3,12 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import logo from "@/assets/NomNom.png";
-import { fetchCart, fetchOrders, signupUser } from "@/api";
+import { signupUser } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { saveAuth } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { syncCartFromServer, syncOrdersFromServer, syncUserStores } from "@/lib/storeSync";
+import { useCartStore } from "@/store/cartStore";
 import { signupFormSchema } from "@/types/auth";
 
 const Signup = () => {
@@ -37,13 +37,12 @@ const Signup = () => {
           return firstKey === "cart" || firstKey === "orders" || firstKey === "current-user";
         },
       });
+      useCartStore.getState().resetCart();
       const data = await signupUser(parsedForm.data);
 
       if (data.token && data.user) {
         saveAuth(data.token, data.user);
-        syncUserStores(data.user);
-        syncCartFromServer(await fetchCart());
-        syncOrdersFromServer(await fetchOrders());
+        await useCartStore.getState().fetchCart();
         toast.success("Account created successfully");
         navigate("/home");
         return;

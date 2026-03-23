@@ -1,4 +1,4 @@
-import { requestJson } from "@/api/client";
+import { api } from "@/api/client";
 import { messageResponseSchema } from "@/types/api";
 import {
   loginResponseSchema,
@@ -10,47 +10,26 @@ import {
 import { currentUserResponseSchema } from "@/types/user";
 
 export async function loginUser(values: LoginForm) {
-  return requestJson(
-    "/users/login",
-    loginResponseSchema,
-    {
-      method: "POST",
-      body: JSON.stringify(values),
-    },
-  );
+  const response = await api.post("/users/login", values);
+  return loginResponseSchema.parse(response.data);
 }
 
 export async function signupUser(values: SignupForm) {
-  return requestJson(
-    "/users/register",
-    signupResponseSchema,
-    {
-      method: "POST",
-      body: JSON.stringify(values),
-    },
-  );
+  const response = await api.post("/users/register", values);
+  return signupResponseSchema.parse(response.data);
 }
 
 export async function logoutUser() {
-  return requestJson(
-    "/users/logout",
-    messageResponseSchema,
-    {
-      method: "POST",
-    },
-  );
+  const response = await api.post("/users/logout");
+  return messageResponseSchema.parse(response.data);
 }
 
 export async function fetchCurrentUser() {
-  return requestJson("/users/me", currentUserResponseSchema);
+  const response = await api.get("/users/me");
+  return currentUserResponseSchema.parse(response.data);
 }
 
 export async function refreshUserSession() {
-  return requestJson(
-    "/users/refresh",
-    refreshResponseSchema,
-    {
-      method: "POST",
-    },
-  );
+  const response = await api.post("/users/refresh");
+  return refreshResponseSchema.parse(response.data);
 }

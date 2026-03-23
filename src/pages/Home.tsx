@@ -9,14 +9,13 @@ import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useCartActions } from "@/hooks/useCartActions";
 import { getCartQuantityTotal, useCartStore } from "@/store/cartStore";
 import type { Product } from "@/types";
 
 const Home = () => {
   // Input: a product from the UI.
   // Output: triggers an optimistic add-to-cart flow.
-  const { addProduct } = useCartActions();
+  const addProduct = useCartStore((state) => state.addProduct);
   const cartItems = useCartStore((state) => state.items);
   const cartCount = useCartStore((state) => getCartQuantityTotal(state.items));
   const { data: productsPage, isLoading } = useQuery({

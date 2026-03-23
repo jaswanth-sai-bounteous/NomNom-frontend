@@ -8,7 +8,6 @@ import { logoutUser } from "@/api";
 import { Button } from "@/components/ui/button";
 import { clearAuth, getStoredUser } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { clearUserStores } from "@/lib/storeSync";
 import { getCartQuantityTotal, useCartStore } from "@/store/cartStore";
 
 const navItems = [
@@ -26,6 +25,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const cartCount = useCartStore((state) => getCartQuantityTotal(state.items));
   const user = getStoredUser();
+  const resetCart = useCartStore((state) => state.resetCart);
 
   const handleLogout = async () => {
     try {
@@ -34,7 +34,7 @@ const Navbar = () => {
       // Clear local state even if the backend session is already gone.
     } finally {
       clearAuth();
-      clearUserStores();
+      resetCart();
       await queryClient.cancelQueries();
       queryClient.removeQueries({
         predicate: (query) => {

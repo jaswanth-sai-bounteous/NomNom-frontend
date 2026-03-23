@@ -1,58 +1,38 @@
-import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ShoppingBag, Trash2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, ShoppingBag, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { checkoutOrder, createStripeCheckoutSession, fetchCart } from "@/api";
+import { checkoutOrder } from "@/api";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import SectionHeading from "@/components/SectionHeading";
 import { Button } from "@/components/ui/button";
-import { useCartActions } from "@/hooks/useCartActions";
-import { formatCurrency } from "@/lib/format";
-import { syncCartFromServer, syncOrdersFromServer } from "@/lib/storeSync";
 import { getStoredUser } from "@/lib/auth";
+import { formatCurrency } from "@/lib/format";
 import { useCartStore } from "@/store/cartStore";
-import { useOrderStore } from "@/store/orderStore";
-import type { ServerCart } from "@/types";
+import type { ServerOrder } from "@/types";
 
-const CartPage = () => {
+const useCheckoutCart = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = getStoredUser();
-  const { items } = useCartStore();
-  const addOrder = useOrderStore((state) => state.addOrder);
-  const { clearAll, removeProduct, updateQuantity, isSaving } = useCartActions();
+  const resetCart = useCartStore((state) => state.resetCart);
 
-  const { data: serverCart, isLoading } = useQuery({
-    queryKey: ["cart", user?.id ?? "guest"],
-    queryFn: fetchCart,
-    enabled: Boolean(user?.id),
-  });
-
-  useEffect(() => {
-    if (serverCart) {
-      syncCartFromServer(serverCart);
-    }
-  }, [serverCart]);
-
-  const checkoutMutation = useMutation({
+  return useMutation({
     mutationFn: () =>
       checkoutOrder({
         shippingAddress: "NomNom default delivery address",
         paymentMethod: "COD",
       }),
     onSuccess: (order) => {
-      const nextOrders = [order, ...useOrderStore.getState().orders];
-      const clearedCart: ServerCart = { cart: serverCart?.cart ?? null, items: [] };
-
-      addOrder(order);
-      syncOrdersFromServer(nextOrders);
-      syncCartFromServer(clearedCart);
-      queryClient.setQueryData(["orders", user?.id ?? "guest"], nextOrders);
-      queryClient.setQueryData(["cart", user?.id ?? "guest"], clearedCart);
-      void queryClient.invalidateQueries({ queryKey: ["cart", user?.id ?? "guest"], refetchType: "active" });
-      void queryClient.invalidateQueries({ queryKey: ["orders", user?.id ?? "guest"], refetchType: "active" });
+      const currentOrders =
+        queryClient.getQueryData<ServerOrder[]>(["orders", user?.id ?? "guest"]) ?? [];
+      queryClient.setQueryData(["orders", user?.id ?? "guest"], [order, ...currentOrders]);
+      resetCart();
+      void queryClient.invalidateQueries({
+        queryKey: ["orders", user?.id ?? "guest"],
+        refetchType: "active",
+      });
       toast.success("Order placed successfully");
       navigate("/orders");
     },
@@ -60,23 +40,16 @@ const CartPage = () => {
       toast.error(error instanceof Error ? error.message : "Checkout failed");
     },
   });
+};
 
-  const stripeCheckoutMutation = useMutation({
-    mutationFn: async () =>
-      createStripeCheckoutSession({
-        items: items.map((item) => ({
-          name: item.product.title,
-          price: item.product.price,
-          quantity: item.quantity,
-        })),
-      }),
-    onSuccess: ({ url }) => {
-      window.location.assign(url);
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Stripe checkout failed");
-    },
-  });
+const CartPage = () => {
+  const items = useCartStore((state) => state.items);
+  const isLoading = useCartStore((state) => state.isLoading);
+  const isSaving = useCartStore((state) => state.isSaving);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeProduct = useCartStore((state) => state.removeProduct);
+  const clearAll = useCartStore((state) => state.clearAll);
+  const checkoutMutation = useCheckoutCart();
 
   const subtotal = items.reduce(
     (total, item) => total + item.product.price * item.quantity,
@@ -85,8 +58,6 @@ const CartPage = () => {
   const deliveryFee = items.length > 0 ? 49 : 0;
   const total = subtotal + deliveryFee;
 
-  // Input: current authenticated user's cart.
-  // Output: creates a backend order and then navigates to the orders page.
   const handleCheckout = () => {
     if (items.length === 0) {
       toast.error("Your cart is empty");
@@ -95,16 +66,6 @@ const CartPage = () => {
 
     checkoutMutation.mutate();
   };
-
-  const handleStripeCheckout = () => {
-    if (items.length === 0) {
-      toast.error("Your cart is empty");
-      return;
-    }
-
-    stripeCheckoutMutation.mutate();
-  };
-
   return (
     <div className="space-y-10 pb-10">
       <SectionHeading
@@ -204,6 +165,12 @@ const CartPage = () => {
 
           <aside className="rounded-[32px] border border-stone-200 bg-white p-6 shadow-[0_18px_40px_-30px_rgba(28,25,23,0.38)]">
             <h2 className="text-2xl font-semibold text-stone-900">Order summary</h2>
+            {isSaving ? (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                <Loader2 className="size-4 animate-spin" />
+                Updating cart...
+              </div>
+            ) : null}
             <div className="mt-6 space-y-4 text-sm text-stone-600">
               <div className="flex items-center justify-between">
                 <span>Subtotal</span>
@@ -222,17 +189,9 @@ const CartPage = () => {
             <Button
               className="mt-8 h-12 w-full rounded-full bg-stone-900 text-white hover:bg-amber-600"
               onClick={handleCheckout}
-              disabled={checkoutMutation.isPending || stripeCheckoutMutation.isPending || isSaving}
+              disabled={checkoutMutation.isPending || isSaving}
             >
               Place order (COD)
-            </Button>
-
-            <Button
-              className="mt-3 h-12 w-full rounded-full bg-emerald-700 text-white hover:bg-emerald-800"
-              onClick={handleStripeCheckout}
-              disabled={checkoutMutation.isPending || stripeCheckoutMutation.isPending || isSaving}
-            >
-              Pay with Stripe
             </Button>
 
             <Button

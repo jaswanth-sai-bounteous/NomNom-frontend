@@ -11,7 +11,6 @@ import SectionHeading from "@/components/SectionHeading";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useCartActions } from "@/hooks/useCartActions";
 import { useCartStore } from "@/store/cartStore";
 import {
   Card,
@@ -28,7 +27,7 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   // Input: product + amount.
   // Output: sends an optimistic add-to-cart request and syncs with the backend.
-  const { addProduct } = useCartActions();
+  const addProduct = useCartStore((state) => state.addProduct);
   const cartItems = useCartStore((state) => state.items);
 
   const {
